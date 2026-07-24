@@ -41,6 +41,38 @@ graph TD
 
 ---
 
+## 🔊 音色引擎三層架構
+
+本專案採用「三層優先順序」策略，兼顧音質與相容性：
+
+| 優先順序 | 引擎 | 涵蓋樂器 | 音質 | 說明 |
+|:---:|------|----------|:---:|------|
+| 1️⃣ | **Tone.js Sampler** | 鋼琴、管風琴、風琴、尼龍吉他、木吉他、豎琴 | ⭐⭐⭐⭐⭐ | 來自 `SelfPlayingMusic/samples/` 的真實樂器錄音採樣 |
+| 2️⃣ | **xmlplay SF2 引擎** | 任何有對應 `instrXXmp3.js` 的 GM 樂器 | ⭐⭐⭐⭐ | Wim Vree 原版即時合成器，支援包絡線、濾波器、顫音 |
+| 3️⃣ | **MIDI-js Fallback** | 以上都沒有的樂器 | ⭐⭐⭐ | 線上 FluidR3_GM 預渲染音波，離線無法使用 |
+
+SF2 樂器檔案命名規則為 `instrXXmp3.js`，其中 `XX` 是 GM Program Number（0-127）。例如：
+- `instr0mp3.js` → 鋼琴 (Acoustic Grand Piano)
+- `instr24mp3.js` → 尼龍吉他 (Nylon Guitar)
+- `instr40mp3.js` → 小提琴 (Violin)
+- `instr73mp3.js` → 長笛 (Flute)
+
+只需將需要的 `instrXXmp3.js` 檔案放入 `xmlplay_188/` 目錄，引擎會自動載入。
+
+### 🔮 未來規劃：完整 SoundFont 分支 (`feature/full-soundfont`)
+
+目前的 SF2 方案需要為每個樂器單獨下載 JS 檔案。未來計劃在獨立分支中探索**載入完整 `.sf2` SoundFont 檔案**的方案，一次涵蓋全部 128 種 GM 樂器：
+
+| 候選方案 | 函式庫 | 特點 |
+|---------|-------|------|
+| **js-synthesizer** | FluidSynth → WebAssembly | 完整的 FluidSynth 移植，音質最高，支援所有 SF2 特性 |
+| **WebAudioFont** | 純 JavaScript | 輕量級，內建 GM 音色，載入快速 |
+| **smplr** | 純 JavaScript | 現代 API，支援 Splendid Grand Piano 等高品質音源 |
+
+> **注意**：完整 SF2 檔案（如 FluidR3_GM.sf2）約 140 MB，可能需要搭配壓縮版（~30 MB）或按需載入策略。此方案將在 `feature/full-soundfont` 分支中實驗。
+
+---
+
 ## 📂 資料夾與相依專案說明
 
 本專案集成了多個優秀的開源音樂工具：
@@ -84,17 +116,21 @@ git submodule update
 
 ## 📝 專案開發藍圖 (Roadmap)
 
-1. **第一階段：UI/UX 現代化改造**
-   - 隱藏原版 `xmlplay` 較為傳統的學術介面。
-   - 使用 CSS 與現代排版技術，設計出具備科技感與 KTV 伴奏質感的控制面板（播放、暫停、進度條、麥克風、升降 Key 控制）。
-2. **第二階段：音訊引擎升級 (Tone.js Bridge)**
-   - 讀取 ABC 記譜法解析出的音符與時間軸數據。
-   - 繞過原生的 Web Audio 合成器，改由 **Tone.js Sampler** 載入高品質 Soundfont 樣音發聲。
-   - 實現變速與升降 Key 功能。
-3. **第三階段：歌詞動態走位 (Karaoke Lyrics Sync)**
-   - 利用 `abc2svg` 的跟譜事件（Event Hook），抓取當前播放音符與時間。
-   - 在網頁前端實現逐字/逐句高亮變色與滾動。
-4. **第四階段：MIDI 輸入與 AI 創作功能**
+1. **第一階段：UI/UX 現代化改造** ✅ 已完成
+   - 設計暗色玻璃擬態（Glassmorphism）KTV 播放器介面。
+   - 側邊欄整合示範曲庫、拖曳上傳、播放控制、音軌樂器分配。
+   - 底部 KTV 歌詞同步高亮顯示。
+2. **第二階段：音訊引擎升級 (Tone.js Bridge)** ✅ 已完成
+   - Tone.js Sampler 載入 SelfPlayingMusic 高品質錄音採樣。
+   - 與 xmlplay SF2 引擎共享同一 AudioContext（`Tone.setContext`），確保音符與游標完美同步。
+   - 三層音色回退架構：Tone.js → SF2 → MIDI-js。
+3. **第三階段：歌詞動態走位 (Karaoke Lyrics Sync)** ✅ 已完成
+   - MusicXML `<lyric>` 標籤解析與分句演算法。
+   - 逐字高亮變色與滾動，霓虹綠 KTV 效果。
+4. **第四階段：SF2 樂器擴充** 🔄 進行中
+   - 下載常用 GM 樂器的 SF2 檔案（電吉他、弦樂、管樂、打擊等）。
+   - 探索完整 SoundFont 載入方案（`feature/full-soundfont` 分支）。
+5. **第五階段：MIDI 輸入與 AI 創作功能** 📋 規劃中
    - 使用 Web MIDI API 錄製鍵盤演奏。
    - 實現 Quantization 量化演算法，將 MIDI 時間校正為標準音符長度。
    - 對接 AI (LLM) 自動配樂與聲部生成，提供創作協同。

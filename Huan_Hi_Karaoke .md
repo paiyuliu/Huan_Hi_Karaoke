@@ -1500,3 +1500,28 @@ Moine 的網站之所以成功，是因為它剛好是 **`abc2svg` 引擎的主�
 
 ---
 Powered by [AI Exporter](https://saveai.net)
+
+---
+
+## 🔊 音色與 SoundFont 擴充策略規劃 (2026-07-24 新增)
+
+在現行的 Tone.js 基礎上，針對伴奏與多樂器音色，我們規劃了以下兩套 SoundFont 擴充方案：
+
+### 方案 A：即時單一 JS 音色包加載 (現行採用方案)
+* **原理**：利用 `xmlplay` 內建的 Web Audio SF2 引擎，讀取單獨被封裝成 JavaScript 的 Base64/mp3 音色檔（命名如 `instrXXmp3.js`，例如 `instr0mp3.js` 代表鋼琴）。
+* **優點**：
+  * **按需加載**：只下載當前樂譜有用到的樂器，節省網路頻寬與載入時間。
+  * **完美相容**：若該樂器未載入本地採樣，會自動下載線上 `MIDI-js` Soundfont 作為備用（Fallback），保持 100% 音訊輸出機率。
+* **做法**：
+  * 當用戶指定其他音色（如小提琴 40、長笛 73 等），若本地 `xmlplay_188/instrXXmp3.js` 存在則直接讀取發聲，避免走線上 fallback。
+
+### 方案 B：完整 SoundFont 載入方案 (未來分支實驗)
+* **原理**：建立一個獨立的分支 `feature/full-soundfont`，直接在網頁端加載完整的 `.sf2` 格式 SoundFont 音源檔（包含全部 128 種 GM 樂器及打擊樂組）。
+* **技術堆疊**：
+  * **js-synthesizer / FluidSynth (Wasm)**：使用編譯成 WebAssembly 的 FluidSynth 作為網頁合成器，將其橋接至主要播放時間軸。
+  * **WebAudioFont**：利用輕量化的 SoundFont 資料庫進行管理。
+* **優點**：
+  * **完全離線**：不論樂譜使用多偏門的樂器（如 112 號 `shanai`），不需個別下載音色檔，100% 離線發聲。
+  * **音質上限高**：可自由更換高品質的 GM SoundFont（如 140MB 的 FluidR3_GM.sf2 或其他 30MB 的精簡版 sf2）。
+* **分支規劃**：
+  * 未來將單獨拉出 `feature/full-soundfont` 分支進行此項實驗，避免影響當前輕量的前端架構。
