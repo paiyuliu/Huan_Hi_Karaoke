@@ -39,7 +39,7 @@ function setSynVars ( audioCtx_p, opt_p, midiVol_p, midiPan_p, midiInstr_p, midi
     logerr = logerr_p;
 }
 
-// variables for the synthszier only
+// variables for the synthesizer only
 var params = [];    // [instr][key] note parameters per instrument
 var rates = [];     // [instr][key] playback rates
 var golven = [];
@@ -68,11 +68,144 @@ var	inst_tb = [ "acoustic_grand_piano", "bright_acoustic_piano", "electric_grand
     "fx_5_brightness", "fx_6_goblins", "fx_7_echoes", "fx_8_scifi", "sitar", "banjo", "shamisen",
     "koto", "kalimba", "bagpipe", "fiddle", "shanai", "tinkle_bell", "agogo", "steel_drums",
     "woodblock", "taiko_drum", "melodic_tom", "synth_drum", "reverse_cymbal", "guitar_fret_noise",
-    "breath_noise", "seashore", "bird_tweet", "telephone_ring", "helicopter", "applause","gunshot"]
+    "breath_noise", "seashore", "bird_tweet", "telephone_ring", "helicopter", "applause","gunshot"];
 var hasPan = 1, hasLFO = 1, hasFlt = 1, hasVCF = 1; // web audio api support
 const volCorJS = 0.5 / 32;  // volume scaling factor for midiJS
 const volCorSF = 0.5 / 60;  // idem for Sf2 (60 == volume of !p!)
 var gToSynth = 0;
+
+// ═══════════════════════════════════════════════════════
+//  Tone.js mapping and configs
+// ═══════════════════════════════════════════════════════
+var toneSamplers = {};
+var tonePanners = {}; // Panners mapped by instrument name to support panning
+
+const TONE_INSTRUMENTS = {
+    0: 'piano', 1: 'piano', 2: 'piano', 3: 'piano', 4: 'piano', 5: 'piano', 6: 'piano', 7: 'piano', // Piano family
+    16: 'organ', 17: 'organ', 18: 'organ', 19: 'organ', // Organ family
+    20: 'harmonium', 21: 'harmonium', // Harmonium / Accordion
+    24: 'guitar-nylon', // Nylon Guitar
+    25: 'guitar-acoustic', // Acoustic Guitar
+    46: 'harp' // Harp
+};
+
+const SHARP_MAP = {
+  'Cs': 'C#', 'Ds': 'D#', 'Fs': 'F#', 'Gs': 'G#', 'As': 'A#'
+};
+
+function sm(notes, octaves) {
+  const out = {};
+  for (const oct of octaves)
+    for (const n of notes)
+      out[(SHARP_MAP[n] || n) + oct] = n + oct + '.mp3';
+  return out;
+}
+
+const A12 = ['C','Cs','D','Ds','E','F','Fs','G','Gs','A','As','B'];
+
+const INSTRUMENT_DEFS = {
+  piano: {
+    label: '鋼琴', vol: -6,
+    baseUrl: 'SelfPlayingMusic/samples/piano/',
+    urls: { ...sm(A12, [1,2,3,4,5,6,7]), 'C8':'C8.mp3' }
+  },
+  organ: {
+    label: '管風琴', vol: -8,
+    baseUrl: 'SelfPlayingMusic/samples/organ/',
+    urls: { ...sm(['C','Ds','Fs','A'], [1,2,3,4,5]), 'C6':'C6.mp3' }
+  },
+  harmonium: {
+    label: 'Harmonium', vol: -6,
+    baseUrl: 'SelfPlayingMusic/samples/harmonium/',
+    urls: {
+      ...sm(A12, [2,3]),
+      ...sm(['C','Cs','D','Ds','E','F','G','Gs','A','As','B'], [4]),
+      'C5':'C5.mp3', 'C#5':'Cs5.mp3', 'D5':'D5.mp3'
+    }
+  },
+  'guitar-acoustic': {
+    label: '木吉他', vol: -4,
+    baseUrl: 'SelfPlayingMusic/samples/guitar-acoustic/',
+    urls: {
+      ...sm(A12, [3,4]),
+      ...sm(['A','As','B','D','Ds','E','F','Fs','G','Gs'], [2]),
+      'C5':'C5.mp3', 'C#5':'Cs5.mp3', 'D5':'D5.mp3'
+    }
+  },
+  'guitar-nylon': {
+    label: '尼龍吉他', vol: -4,
+    baseUrl: 'SelfPlayingMusic/samples/guitar-nylon/',
+    urls: {
+      'B1':'B1.mp3',
+      'D2':'D2.mp3','E2':'E2.mp3','F#2':'Fs2.mp3','G#2':'Gs2.mp3','A2':'A2.mp3','B2':'B2.mp3',
+      'C#3':'Cs3.mp3','D3':'D3.mp3','E3':'E3.mp3','F#3':'Fs3.mp3','G3':'G3.mp3','A3':'A3.mp3','B3':'B3.mp3',
+      'C#4':'Cs4.mp3','D#4':'Ds4.mp3','E4':'E4.mp3','F#4':'Fs4.mp3','G#4':'Gs4.mp3','A4':'A4.mp3','B4':'B4.mp3',
+      'C#5':'Cs5.mp3','D5':'D5.mp3','E5':'E5.mp3','F#5':'Fs5.mp3','G5':'G5.mp3','G#5':'Gs5.mp3','A5':'A5.mp3','A#5':'As5.mp3'
+    }
+  },
+  harp: {
+    label: '豎琴', vol: -4,
+    baseUrl: 'SelfPlayingMusic/samples/harp/',
+    urls: {
+      'E1':'E1.mp3','G1':'G1.mp3','B1':'B1.mp3',
+      'D2':'D2.mp3','F2':'F2.mp3','A2':'A2.mp3',
+      'C3':'C3.mp3','E3':'E3.mp3','G3':'G3.mp3','B3':'B3.mp3',
+      'D4':'D4.mp3','F4':'F4.mp3','A4':'A4.mp3',
+      'C5':'C5.mp3','E5':'E5.mp3','G5':'G5.mp3','B5':'B5.mp3',
+      'F6':'F6.mp3','A6':'A6.mp3','B6':'B6.mp3',
+      'D7':'D7.mp3','F7':'F7.mp3'
+    }
+  }
+};
+
+function midiToPitch(midiNum) {
+  const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const noteName = notes[midiNum % 12];
+  const octave = Math.floor(midiNum / 12) - 1;
+  return noteName + octave;
+}
+
+function loadToneSampler(instId) {
+    return new Promise((resolve) => {
+        const toneName = TONE_INSTRUMENTS[instId];
+        if (!toneName) {
+            resolve();
+            return;
+        }
+        if (toneSamplers[toneName]) {
+            resolve();
+            return;
+        }
+        const def = INSTRUMENT_DEFS[toneName];
+        loginst('Loading Tone.js sampler for: ' + def.label + '...');
+        
+        if (typeof Tone === 'undefined') {
+            logerr('Tone.js is not loaded on this page!');
+            resolve();
+            return;
+        }
+        
+        // Create Panner and connect to Destination
+        const panner = new Tone.Panner(0).toDestination();
+        tonePanners[toneName] = panner;
+
+        const sampler = new Tone.Sampler({
+            urls: def.urls,
+            baseUrl: def.baseUrl,
+            volume: def.vol,
+            onload: () => {
+                loginst('Tone.js sampler ' + def.label + ' loaded.');
+                resolve();
+            },
+            onerror: (err) => {
+                logerr('Error loading Tone.js sampler: ' + err);
+                resolve();
+            }
+        }).connect(panner);
+        
+        toneSamplers[toneName] = sampler;
+    });
+}
 
 function loginst (s) { logerr (s); cmpDlg.innerHTML += '<div style="white-space: nowrap">' + s + '</div>'}
 function logcmp (s) { logerr (s); cmpDlg.innerHTML += s + '<br>'}
@@ -125,13 +258,40 @@ function speel (tijd, inst, noot, cent, dur, tf, vce, velo, orn) {
 function speelhulp (tijd, inst, noot, cent, dur, vce, velo) { // tijd en duur in millisecs
     inst = instMap  [inst];         // instrument uit het menu of met URL-parameter
     noot += opt.transMap [vce] || 0;    // transpositie per stem met URL-parameter
-    if (inst in instSf2Loaded && withRT) {
-        opneer (inst, noot, cent, tijd / 1000, (dur - 1) / 1000, vce, velo);  // msec -> sec
-    } else if (inst in instArr){
-        var midiMsg = [0x90, inst * 128 + noot, velo];
-        zend (midiMsg, tijd, vce);
-        midiMsg [2] = 0;
-        zend (midiMsg, tijd + dur - 1, vce);
+
+    const toneName = TONE_INSTRUMENTS[inst];
+    if (toneName && toneSamplers[toneName]) {
+        const sampler = toneSamplers[toneName];
+        const pitch = midiToPitch(noot);
+        const durSec = dur / 1000;
+        const timeSec = tijd / 1000;
+
+        // Apply voice panning to panner node
+        if (tonePanners[toneName] && midiPan[vce] !== undefined) {
+            const panVal = (midiPan[vce] - 64) / 64; // -1 to 1
+            tonePanners[toneName].pan.setValueAtTime(panVal, timeSec);
+        }
+
+        // Calculate velocity scaled by voice volume
+        const vceVol = (midiVol[vce] !== undefined ? midiVol[vce] : 100) / 127;
+        const vol = (velo / 127) * vceVol;
+
+        if (typeof Tone !== 'undefined') {
+            if (Tone.context.state !== 'running') {
+                Tone.start();
+            }
+            sampler.triggerAttackRelease(pitch, durSec, timeSec, vol);
+        }
+    } else {
+        // Fallback to original Web Audio Synthesizer
+        if (inst in instSf2Loaded && withRT) {
+            opneer (inst, noot, cent, tijd / 1000, (dur - 1) / 1000, vce, velo);  // msec -> sec
+        } else if (inst in instArr){
+            var midiMsg = [0x90, inst * 128 + noot, velo];
+            zend (midiMsg, tijd, vce);
+            midiMsg [2] = 0;
+            zend (midiMsg, tijd + dur - 1, vce);
+        }
     }
 }
 
@@ -434,18 +594,49 @@ async function laadNoot2 (fonturl, metRT) {
         gToSynth = 1;
         loginst ('notes decoded')
     }
+    
     var instrs = {};
-    withRT = metRT
+    withRT = metRT;
     midiUsedArr.forEach ((mnum) => { instrs [mnum >> 7] = 1; });
-    if (withRT) {   // load SF2 fonts
-        await laadSF2Arr (Object.keys (instrs), fonturl);
-    } else {        // load MIDI-js fonts
-        var mjsbox = document.getElementById ('midijs');
-        if (mjsbox) mjsbox.checked = 'true' // eerst kijken of de checkbox er is!
-        var midiNums = midiUsedArr.filter (function (m) { return !(m in midiLoaded); });
-        await laadMidiJsArr (Object.keys (instrs), fonturl)
-        cmpDlg.innerHTML += 'decode notes:'
-        await decodeMidiNums (midiNums);   // only decode samples of notes used in the score
+    
+    // Load Tone.js samplers first for any supported instruments
+    const neededInsts = Object.keys(instrs).map(Number);
+    for (const instId of neededInsts) {
+        if (instId in TONE_INSTRUMENTS) {
+            await loadToneSampler(instId);
+        }
+    }
+    
+    // Filter out Tone.js instruments from fallback list
+    const originalInstrs = {};
+    Object.keys(instrs).forEach(instId => {
+        const id = Number(instId);
+        if (!(id in TONE_INSTRUMENTS)) {
+            originalInstrs[id] = 1;
+        }
+    });
+
+    // Check if we still have fallback instruments to load
+    const fallbackCount = Object.keys(originalInstrs).length;
+    if (fallbackCount > 0) {
+        if (withRT) {   // load SF2 fonts
+            await laadSF2Arr (Object.keys (originalInstrs), fonturl);
+        } else {        // load MIDI-js fonts
+            var mjsbox = document.getElementById ('midijs');
+            if (mjsbox) mjsbox.checked = 'true'
+            var midiNums = midiUsedArr.filter (function (m) { 
+                const instId = m >> 7;
+                return !(instId in TONE_INSTRUMENTS) && !(m in midiLoaded); 
+            });
+            await laadMidiJsArr (Object.keys (originalInstrs), fonturl);
+            if (midiNums.length > 0) {
+                cmpDlg.innerHTML += 'decode notes:';
+                await decodeMidiNums (midiNums);
+            }
+        }
+    } else {
+        // If all instruments are loaded via Tone.js, mark synthesis ready
+        gToSynth = 1;
     }
 }
 
