@@ -9,19 +9,7 @@ import * as sLib from './xmlplay_188/full_source/xmlplay_syn.js';
 //  Demo Songs Configuration
 // ═══════════════════════════════════════════════════════
 const DEMO_SONGS = [
-  { title: "歡喜就好 - 陳雷",      file: "MUSIC/歡喜就好_陳雷.xml" },
-  { title: "稻香 - 周杰倫",        file: "MUSIC/稻香.xml" },
-  { title: "隱形的翅膀 - 張韶涵",  file: "MUSIC/隱形的翅膀.xml" },
-  { title: "明天會更好 - 群星",    file: "MUSIC/明天會更好.xml" },
-  { title: "我還年輕我還年輕 - 告五人", file: "MUSIC/我還年輕我還年輕.xml" },
-  { title: "再見 - 張震嶽",        file: "MUSIC/再見_張震獄.xml" },
-  { title: "外婆的澎湖灣 - 潘安邦", file: "MUSIC/外婆的澎湖灣.xml" },
-  { title: "追夢人 - 鳳飛飛",      file: "MUSIC/追夢人_鳳飛飛.xml" },
-  { title: "淚橋 - 伍佰",          file: "MUSIC/淚橋_伍佰.xml" },
-  { title: "不要慌太陽下山有月光",  file: "MUSIC/不要慌太陽下山有月光.xml" },
-  { title: "好想你 - 四葉草",      file: "MUSIC/好想你_四葉草.xml" },
-  { title: "親愛的你啊 - 任素汐",  file: "MUSIC/親愛的你啊_任素汐.xml" },
-  { title: "離別開出花",            file: "MUSIC/離別開出花.xml" }
+  { title: "歡喜就好 - 陳雷",      file: "MUSIC/歡喜就好_陳雷.xml" }
 ];
 
 // ═══════════════════════════════════════════════════════
