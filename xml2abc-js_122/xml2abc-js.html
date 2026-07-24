@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html class="rat" hc="a0" hcx="0" style="backface-visibility: hidden;"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="jquery-1.11.1.min.js"></script>
+<script src="xml2abc.js"></script>
+<script src="abc2svg-1_1.js"></script>
+<script src="jszip.min.js"></script>
+<script src="xmlplay_los.js" type="module"></script>
+<script id="jswrk" type="text/js-worker">
+//***********************************
+// Let op dit is een embedded worker
+//***********************************
+const svg36 = ['%%beginsvg','<defs>',
+'<text id="acc1_3" x="-1">&#xe261; <tspan x="-6" y="-4" style="font-size:14px">&#8593;</tspan></text>',
+'<text id="acc2_3" x="-1">&#xe262; <tspan x="-5" y="14" style="font-size:14px">&#8595;</tspan></text>',
+'<text id="acc4_3" x="-1">&#xe262; <tspan x="-5" y="-4" style="font-size:14px">&#8593;</tspan></text>',
+'<text id="acc-4_3" x="-2">&#xe260; <tspan x="-8.2" y="9" style="font-size:16px">&#8595;</tspan></text>',
+'<text id="acc-2_3" x="-1">&#xe260; <tspan x="-7.3" y="-1" style="font-size:16px">&#8593;</tspan></text>',
+'<text id="acc-1_3" x="-1">&#xe261; <tspan x="-2" y="12" style="font-size:14px">&#8595;</tspan></text>',
+'</defs>','%%endsvg'].join ('\n');
+var tabHaak
+function dolayout (abctxt) {
+    function svg_out (str) {
+        muziek += str;
+    }
+    function svgInfo (type, s1, s2, x, y, w, h, s) {
+        if (["beam", "slur", "tuplet"].includes (type)) return
+        x = abcObj.sx (x).toFixed (1);
+        y = abcObj.sy (y).toFixed (1);
+        h = abcObj.sh (h);
+        w = w.toFixed (1)
+        if (type == 'grace') s2 = s.extra.iend; // ???
+        if (!s2) s2 = s1 + 1;   // ????
+        var a = `<rect id="r${s1}_${s2}" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+        abcObj.out_svg (a);
+    }
+    var abcObj;
+    var muziek = '';
+    var errtxt = '';
+    var user = {
+        'imagesize': 'width="100%"',
+        'img_out': svg_out,
+        'errmsg': function errmsg (txt) { errtxt += txt + '\n' },
+        'read_file': function (x) { // %%abc-include, unused
+            return svg36;   // except for including the edo36 glyph definitions
+        },
+        'anno_stop': svgInfo,
+        'page_format': true // define the non-page-breakable blocks
+    }
+    const rvm = new RegExp (/V:\w+\s*tab[^\n]*\n%%voicemap/, "s");
+    if (abctxt.match (rvm) != null) {       // het is een tabulatuur met %%voicemap
+        delete abc2svg.mhooks ['strtab'];   // zet module strtab uit
+    } else {                                // zet module strtab aan
+        abc2svg.mhooks ['strtab'] = tabHaak;
+    }
+    abc2svg.mhooks.strtab
+    abcObj = new Abc (user);
+    abcObj.tosvg ('abc2svg', abctxt);
+    postMessage ({svg: muziek, err: errtxt});
+}
+
+onmessage = (e) => {
+    if (e.data.url) {
+        importScripts (e.data.url); // importeer abc2svg-1.js
+        tabHaak = abc2svg.mhooks ['strtab'];    // bewaar wijzer naar strtab modulw
+    } else {
+        dolayout (e.data.abc);
+    }
+}
+//***********************************
+// Einde van de embedded worker
+//***********************************
+</script>
+<style>
+.rat { width: 100%; height:100%; margin:0px; overflow: auto; }
+#btns     { height:  5%; overflow: hidden; }
+#res      { height: 90%; overflow: hidden; }
+#err      { height:  5%; background-color: #eee;}
+#err:hover { height:  50%; position:absolute; top:50%; }
+#abc      { width: 50%;  display: inline-block; vertical-align: top; font-size: 16px;
+            resize: none; padding: 0; margin: 0; box-sizing: border-box; 
+            padding-left: 5px; border: none; }
+#notation { width: 50%;  display: inline-block; vertical-align: top; }
+svg       { width: 100%; height: 50%; }
+#hlpbtn, #optbtn   { float: right; margin-right:10px; }
+#hlptxt, #opttxt, #clpsav { display:none; position:absolute; right: 0px; 
+    background-color: #eee; max-height: 80%; overflow-y: auto; z-index: 3;
+    margin-left: 10px; margin-right: 10px; padding: 5px; }
+#hlptxt ul { padding-inline-start: 25px; max-width: 800px; }
+#hlptxt button { float:right; }
+#opttxt button { float: right; }
+#opttxt div    { margin-bottom: 5px; }
+#opttxt label  { display:inline-block; width: 18em; }
+#opttxt span   { border: 1px solid #ccc; margin-left:10px; padding:1px; }
+#achter { position: absolute; background: transparent; z-index: 2; 
+          width: 100%; height: 100%; display: none; }
+#clpsav { right: 40%; }
+input[type="text"] { width: 3em; }
+#fmtdiv   { display: none; }
+.indrag   { background: #aaa; }
+.dashed   { border-left: thin dashed black; }
+#rollijn   { position:absolute; width:30px; z-index:1; left: 50%; }
+#rollijn:hover, .rolgroen { cursor:col-resize; background: rgba(0,255,0,0.3); }
+</style>
+<style>.dlog { display:none; background:lightblue; position:fixed; top: 50%; left: 50%; width:60%; padding:10px; transform: translate(-50%,-50%); z-index:9; overflow: auto; }
+</style><style data-read-frog-react-shadow-css-key="60c5ab16d32980f483cb7253d60ed7086a780b29ec2d1eb37e8cfa987eade8d5">@property --rf-tw-animation-delay{syntax:"*";inherits:false;initial-value:0s}
+@property --rf-tw-animation-direction{syntax:"*";inherits:false;initial-value:normal}
+@property --rf-tw-animation-duration{syntax:"*";inherits:false}
+@property --rf-tw-animation-fill-mode{syntax:"*";inherits:false;initial-value:none}
+@property --rf-tw-animation-iteration-count{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-enter-blur{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-enter-opacity{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-enter-rotate{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-enter-scale{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-enter-translate-x{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-enter-translate-y{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-exit-blur{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-exit-opacity{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-exit-rotate{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-exit-scale{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-exit-translate-x{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-exit-translate-y{syntax:"*";inherits:false;initial-value:0}
+@property --scroll-fade-t{syntax:"<length-percentage>";inherits:false;initial-value:0}
+@property --scroll-fade-b{syntax:"<length-percentage>";inherits:false;initial-value:0}
+@property --scroll-fade-s{syntax:"<length-percentage>";inherits:false;initial-value:0}
+@property --scroll-fade-e{syntax:"<length-percentage>";inherits:false;initial-value:0}
+@property --scroll-fade-mask{syntax:"*";inherits:false}
+@property --shimmer-angle{syntax:"<angle>";inherits:true;initial-value:20deg}
+@property --shimmer-image{syntax:"*";inherits:false}
+@property --shimmer-text-fill{syntax:"*";inherits:false}
+@property --rf-tw-translate-x{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-translate-y{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-translate-z{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-scale-x{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-scale-y{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-scale-z{syntax:"*";inherits:false;initial-value:1}
+@property --rf-tw-rotate-x{syntax:"*";inherits:false}
+@property --rf-tw-rotate-y{syntax:"*";inherits:false}
+@property --rf-tw-rotate-z{syntax:"*";inherits:false}
+@property --rf-tw-skew-x{syntax:"*";inherits:false}
+@property --rf-tw-skew-y{syntax:"*";inherits:false}
+@property --rf-tw-space-y-reverse{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-space-x-reverse{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-divide-y-reverse{syntax:"*";inherits:false;initial-value:0}
+@property --rf-tw-border-style{syntax:"*";inherits:false;initial-value:solid}
+@property --rf-tw-gradient-position{syntax:"*";inherits:false}
+@property --rf-tw-gradient-from{syntax:"<color>";inherits:false;initial-value:#0000}
+@property --rf-tw-gradient-via{syntax:"<color>";inherits:false;initial-value:#0000}
+@property --rf-tw-gradient-to{syntax:"<color>";inherits:false;initial-value:#0000}
+@property --rf-tw-gradient-stops{syntax:"*";inherits:false}
+@property --rf-tw-gradient-via-stops{syntax:"*";inherits:false}
+@property --rf-tw-gradient-from-position{syntax:"<length-percentage>";inherits:false;initial-value:0%}
+@property --rf-tw-gradient-via-position{syntax:"<length-percentage>";inherits:false;initial-value:50%}
+@property --rf-tw-gradient-to-position{syntax:"<length-percentage>";inherits:false;initial-value:100%}
+@property --rf-tw-leading{syntax:"*";inherits:false}
+@property --rf-tw-font-weight{syntax:"*";inherits:false}
+@property --rf-tw-tracking{syntax:"*";inherits:false}
+@property --rf-tw-ordinal{syntax:"*";inherits:false}
+@property --rf-tw-slashed-zero{syntax:"*";inherits:false}
+@property --rf-tw-numeric-figure{syntax:"*";inherits:false}
+@property --rf-tw-numeric-spacing{syntax:"*";inherits:false}
+@property --rf-tw-numeric-fraction{syntax:"*";inherits:false}
+@property --rf-tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}
+@property --rf-tw-shadow-color{syntax:"*";inherits:false}
+@property --rf-tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}
+@property --rf-tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}
+@property --rf-tw-inset-shadow-color{syntax:"*";inherits:false}
+@property --rf-tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}
+@property --rf-tw-ring-color{syntax:"*";inherits:false}
+@property --rf-tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}
+@property --rf-tw-inset-ring-color{syntax:"*";inherits:false}
+@property --rf-tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}
+@property --rf-tw-ring-inset{syntax:"*";inherits:false}
+@property --rf-tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}
+@property --rf-tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}
+@property --rf-tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}
+@property --rf-tw-outline-style{syntax:"*";inherits:false;initial-value:solid}
+@property --rf-tw-blur{syntax:"*";inherits:false}
+@property --rf-tw-brightness{syntax:"*";inherits:false}
+@property --rf-tw-contrast{syntax:"*";inherits:false}
+@property --rf-tw-grayscale{syntax:"*";inherits:false}
+@property --rf-tw-hue-rotate{syntax:"*";inherits:false}
+@property --rf-tw-invert{syntax:"*";inherits:false}
+@property --rf-tw-opacity{syntax:"*";inherits:false}
+@property --rf-tw-saturate{syntax:"*";inherits:false}
+@property --rf-tw-sepia{syntax:"*";inherits:false}
+@property --rf-tw-drop-shadow{syntax:"*";inherits:false}
+@property --rf-tw-drop-shadow-color{syntax:"*";inherits:false}
+@property --rf-tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}
+@property --rf-tw-drop-shadow-size{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-blur{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-brightness{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-contrast{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-grayscale{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-hue-rotate{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-invert{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-opacity{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-saturate{syntax:"*";inherits:false}
+@property --rf-tw-backdrop-sepia{syntax:"*";inherits:false}
+@property --rf-tw-duration{syntax:"*";inherits:false}
+@property --rf-tw-ease{syntax:"*";inherits:false}
+@property --rf-tw-content{syntax:"*";inherits:false;initial-value:""}</style><style id="hc_style" type="text/css">
+  html[hc="a0"] {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_off");
+  }
+  html[hcx="0"] img[src*="jpg"],
+  html[hcx="0"] img[src*="jpeg"],
+  html[hcx="0"] svg image,
+  html[hcx="0"] img.rg_i,
+  html[hcx="0"] embed,
+  html[hcx="0"] object,
+  html[hcx="0"] video {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_off");
+  }
+
+  html[hc="a1"] {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_highcontrast");
+  }
+  html[hcx="1"] img[src*="jpg"],
+  html[hcx="1"] img[src*="jpeg"],
+  html[hcx="1"] img.rg_i,
+  html[hcx="1"] svg image,
+  html[hcx="1"] embed,
+  html[hcx="1"] object,
+  html[hcx="1"] video {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_highcontrast_back");
+  }
+
+  html[hc="a2"] {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_grayscale");
+  }
+  html[hcx="2"] img[src*="jpg"],
+  html[hcx="2"] img[src*="jpeg"],
+  html[hcx="2"] img.rg_i,
+  html[hcx="2"] svg image,
+  html[hcx="2"] embed,
+  html[hcx="2"] object,
+  html[hcx="2"] video {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_grayscale_back");
+  }
+
+  html[hc="a3"] {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_invert");
+  }
+  html[hcx="3"] img[src*="jpg"],
+  html[hcx="3"] img[src*="jpeg"],
+  html[hcx="3"] img.rg_i,
+  html[hcx="3"] svg image,
+  html[hcx="3"] embed,
+  html[hcx="3"] object,
+  html[hcx="3"] video {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_invert_back");
+  }
+
+  html[hc="a4"] {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_invert_grayscale");
+  }
+  html[hcx="4"] img[src*="jpg"],
+  html[hcx="4"] img[src*="jpeg"],
+  html[hcx="4"] img.rg_i,
+  html[hcx="4"] svg image,
+  html[hcx="4"] embed,
+  html[hcx="4"] object,
+  html[hcx="4"] video {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_invert_back");
+  }
+
+  html[hc="a5"] {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_yellow_on_black");
+  }
+  html[hcx="5"] img[src*="jpg"],
+  html[hcx="5"] img[src*="jpeg"],
+  html[hcx="5"] img.rg_i,
+  html[hcx="5"] svg image,
+  html[hcx="5"] embed,
+  html[hcx="5"] object,
+  html[hcx="5"] video {
+    filter: url("https://wim.vree.org/js/xml2abc-js.html#hc_extension_yellow_on_black_back");
+  }
+
+  html[hc] .docs-menubar,
+  html[hc] .docs-titlebar-buttons,
+  html[hc] .kix-appview-editor-toolbar,
+  html[hc] .goog-toolbar {
+    z-index: 2147483647 !important;
+    will-change: transform;
+    transform: translateZ(0);
+    contain: paint;
+    pointer-events: auto !important;
+  }
+</style><style wxt-shadow-root-document-styles="iie6yuy48bi">@property --rf-tw-animation-delay{syntax:"*";inherits:false;initial-value:0s}@property --rf-tw-animation-direction{syntax:"*";inherits:false;initial-value:normal}@property --rf-tw-animation-duration{syntax:"*";inherits:false}@property --rf-tw-animation-fill-mode{syntax:"*";inherits:false;initial-value:none}@property --rf-tw-animation-iteration-count{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-enter-blur{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-enter-opacity{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-enter-rotate{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-enter-scale{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-enter-translate-x{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-enter-translate-y{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-blur{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-opacity{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-exit-rotate{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-scale{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-exit-translate-x{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-translate-y{syntax:"*";inherits:false;initial-value:0}@property --scroll-fade-t{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-b{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-s{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-e{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-mask{syntax:"*";inherits:false}@property --shimmer-angle{syntax:"<angle>";inherits:true;initial-value:20deg}@property --shimmer-image{syntax:"*";inherits:false}@property --shimmer-text-fill{syntax:"*";inherits:false}@property --rf-tw-translate-x{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-translate-y{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-translate-z{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-scale-x{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-scale-y{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-scale-z{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-rotate-x{syntax:"*";inherits:false}@property --rf-tw-rotate-y{syntax:"*";inherits:false}@property --rf-tw-rotate-z{syntax:"*";inherits:false}@property --rf-tw-skew-x{syntax:"*";inherits:false}@property --rf-tw-skew-y{syntax:"*";inherits:false}@property --rf-tw-space-y-reverse{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-space-x-reverse{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-divide-y-reverse{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-border-style{syntax:"*";inherits:false;initial-value:solid}@property --rf-tw-gradient-position{syntax:"*";inherits:false}@property --rf-tw-gradient-from{syntax:"<color>";inherits:false;initial-value:#0000}@property --rf-tw-gradient-via{syntax:"<color>";inherits:false;initial-value:#0000}@property --rf-tw-gradient-to{syntax:"<color>";inherits:false;initial-value:#0000}@property --rf-tw-gradient-stops{syntax:"*";inherits:false}@property --rf-tw-gradient-via-stops{syntax:"*";inherits:false}@property --rf-tw-gradient-from-position{syntax:"<length-percentage>";inherits:false;initial-value:0%}@property --rf-tw-gradient-via-position{syntax:"<length-percentage>";inherits:false;initial-value:50%}@property --rf-tw-gradient-to-position{syntax:"<length-percentage>";inherits:false;initial-value:100%}@property --rf-tw-leading{syntax:"*";inherits:false}@property --rf-tw-font-weight{syntax:"*";inherits:false}@property --rf-tw-tracking{syntax:"*";inherits:false}@property --rf-tw-ordinal{syntax:"*";inherits:false}@property --rf-tw-slashed-zero{syntax:"*";inherits:false}@property --rf-tw-numeric-figure{syntax:"*";inherits:false}@property --rf-tw-numeric-spacing{syntax:"*";inherits:false}@property --rf-tw-numeric-fraction{syntax:"*";inherits:false}@property --rf-tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-shadow-color{syntax:"*";inherits:false}@property --rf-tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --rf-tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-inset-shadow-color{syntax:"*";inherits:false}@property --rf-tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --rf-tw-ring-color{syntax:"*";inherits:false}@property --rf-tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-inset-ring-color{syntax:"*";inherits:false}@property --rf-tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-ring-inset{syntax:"*";inherits:false}@property --rf-tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --rf-tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --rf-tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-outline-style{syntax:"*";inherits:false;initial-value:solid}@property --rf-tw-blur{syntax:"*";inherits:false}@property --rf-tw-brightness{syntax:"*";inherits:false}@property --rf-tw-contrast{syntax:"*";inherits:false}@property --rf-tw-grayscale{syntax:"*";inherits:false}@property --rf-tw-hue-rotate{syntax:"*";inherits:false}@property --rf-tw-invert{syntax:"*";inherits:false}@property --rf-tw-opacity{syntax:"*";inherits:false}@property --rf-tw-saturate{syntax:"*";inherits:false}@property --rf-tw-sepia{syntax:"*";inherits:false}@property --rf-tw-drop-shadow{syntax:"*";inherits:false}@property --rf-tw-drop-shadow-color{syntax:"*";inherits:false}@property --rf-tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --rf-tw-drop-shadow-size{syntax:"*";inherits:false}@property --rf-tw-backdrop-blur{syntax:"*";inherits:false}@property --rf-tw-backdrop-brightness{syntax:"*";inherits:false}@property --rf-tw-backdrop-contrast{syntax:"*";inherits:false}@property --rf-tw-backdrop-grayscale{syntax:"*";inherits:false}@property --rf-tw-backdrop-hue-rotate{syntax:"*";inherits:false}@property --rf-tw-backdrop-invert{syntax:"*";inherits:false}@property --rf-tw-backdrop-opacity{syntax:"*";inherits:false}@property --rf-tw-backdrop-saturate{syntax:"*";inherits:false}@property --rf-tw-backdrop-sepia{syntax:"*";inherits:false}@property --rf-tw-duration{syntax:"*";inherits:false}@property --rf-tw-ease{syntax:"*";inherits:false}@property --rf-tw-content{syntax:"*";inherits:false;initial-value:""}</style><style wxt-shadow-root-document-styles="w2o8ox5z9un">@property --rf-tw-animation-delay{syntax:"*";inherits:false;initial-value:0s}@property --rf-tw-animation-direction{syntax:"*";inherits:false;initial-value:normal}@property --rf-tw-animation-duration{syntax:"*";inherits:false}@property --rf-tw-animation-fill-mode{syntax:"*";inherits:false;initial-value:none}@property --rf-tw-animation-iteration-count{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-enter-blur{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-enter-opacity{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-enter-rotate{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-enter-scale{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-enter-translate-x{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-enter-translate-y{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-blur{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-opacity{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-exit-rotate{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-scale{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-exit-translate-x{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-exit-translate-y{syntax:"*";inherits:false;initial-value:0}@property --scroll-fade-t{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-b{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-s{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-e{syntax:"<length-percentage>";inherits:false;initial-value:0}@property --scroll-fade-mask{syntax:"*";inherits:false}@property --shimmer-angle{syntax:"<angle>";inherits:true;initial-value:20deg}@property --shimmer-image{syntax:"*";inherits:false}@property --shimmer-text-fill{syntax:"*";inherits:false}@property --rf-tw-translate-x{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-translate-y{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-translate-z{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-scale-x{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-scale-y{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-scale-z{syntax:"*";inherits:false;initial-value:1}@property --rf-tw-rotate-x{syntax:"*";inherits:false}@property --rf-tw-rotate-y{syntax:"*";inherits:false}@property --rf-tw-rotate-z{syntax:"*";inherits:false}@property --rf-tw-skew-x{syntax:"*";inherits:false}@property --rf-tw-skew-y{syntax:"*";inherits:false}@property --rf-tw-space-y-reverse{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-space-x-reverse{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-divide-y-reverse{syntax:"*";inherits:false;initial-value:0}@property --rf-tw-border-style{syntax:"*";inherits:false;initial-value:solid}@property --rf-tw-gradient-position{syntax:"*";inherits:false}@property --rf-tw-gradient-from{syntax:"<color>";inherits:false;initial-value:#0000}@property --rf-tw-gradient-via{syntax:"<color>";inherits:false;initial-value:#0000}@property --rf-tw-gradient-to{syntax:"<color>";inherits:false;initial-value:#0000}@property --rf-tw-gradient-stops{syntax:"*";inherits:false}@property --rf-tw-gradient-via-stops{syntax:"*";inherits:false}@property --rf-tw-gradient-from-position{syntax:"<length-percentage>";inherits:false;initial-value:0%}@property --rf-tw-gradient-via-position{syntax:"<length-percentage>";inherits:false;initial-value:50%}@property --rf-tw-gradient-to-position{syntax:"<length-percentage>";inherits:false;initial-value:100%}@property --rf-tw-leading{syntax:"*";inherits:false}@property --rf-tw-font-weight{syntax:"*";inherits:false}@property --rf-tw-tracking{syntax:"*";inherits:false}@property --rf-tw-ordinal{syntax:"*";inherits:false}@property --rf-tw-slashed-zero{syntax:"*";inherits:false}@property --rf-tw-numeric-figure{syntax:"*";inherits:false}@property --rf-tw-numeric-spacing{syntax:"*";inherits:false}@property --rf-tw-numeric-fraction{syntax:"*";inherits:false}@property --rf-tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-shadow-color{syntax:"*";inherits:false}@property --rf-tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --rf-tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-inset-shadow-color{syntax:"*";inherits:false}@property --rf-tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --rf-tw-ring-color{syntax:"*";inherits:false}@property --rf-tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-inset-ring-color{syntax:"*";inherits:false}@property --rf-tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-ring-inset{syntax:"*";inherits:false}@property --rf-tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --rf-tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --rf-tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --rf-tw-outline-style{syntax:"*";inherits:false;initial-value:solid}@property --rf-tw-blur{syntax:"*";inherits:false}@property --rf-tw-brightness{syntax:"*";inherits:false}@property --rf-tw-contrast{syntax:"*";inherits:false}@property --rf-tw-grayscale{syntax:"*";inherits:false}@property --rf-tw-hue-rotate{syntax:"*";inherits:false}@property --rf-tw-invert{syntax:"*";inherits:false}@property --rf-tw-opacity{syntax:"*";inherits:false}@property --rf-tw-saturate{syntax:"*";inherits:false}@property --rf-tw-sepia{syntax:"*";inherits:false}@property --rf-tw-drop-shadow{syntax:"*";inherits:false}@property --rf-tw-drop-shadow-color{syntax:"*";inherits:false}@property --rf-tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --rf-tw-drop-shadow-size{syntax:"*";inherits:false}@property --rf-tw-backdrop-blur{syntax:"*";inherits:false}@property --rf-tw-backdrop-brightness{syntax:"*";inherits:false}@property --rf-tw-backdrop-contrast{syntax:"*";inherits:false}@property --rf-tw-backdrop-grayscale{syntax:"*";inherits:false}@property --rf-tw-backdrop-hue-rotate{syntax:"*";inherits:false}@property --rf-tw-backdrop-invert{syntax:"*";inherits:false}@property --rf-tw-backdrop-opacity{syntax:"*";inherits:false}@property --rf-tw-backdrop-saturate{syntax:"*";inherits:false}@property --rf-tw-backdrop-sepia{syntax:"*";inherits:false}@property --rf-tw-duration{syntax:"*";inherits:false}@property --rf-tw-ease{syntax:"*";inherits:false}@property --rf-tw-content{syntax:"*";inherits:false;initial-value:""}</style></head><body class="rat" style="height: 619px;">
+<div id="achter"></div> <!-- transparante achtergrond voor dialogen om clicks op te vangen-->
+<pre id="deb" style="position:absolute; left:10%; background:aqua"></pre>
+<div class="rat" id="btns" style="height: 4%;">
+    <label>MusicXML: </label><input type="file" id="fileinput">
+    <label>ABC: </label><button id="savebtn" disabled="true">Save</button>
+    <label></label><button id="clipbtn" disabled="true">to Clip</button>
+    <label style="margin-left:1em" title="wrap ABC text (cntrl-m)">
+        wrap<input type="checkbox" id="wrap" checked=""></label>
+    <button id="fntpls" title="larger ABC text (cntrl-+)"><b>+</b></button>
+    <button id="fntmin" title="smaller ABC text (cntrl--)"><b>-</b></button>
+    <button id="knpSpeel" title="cntrl-space">play</button>
+    <button id="hlpbtn">help</button>
+    <button id="optbtn">Options</button>    
+</div>
+<form id="opttxt">
+    <div title="positive integer (default 0)">
+        <label for="bpl">Bars per line:</label><input id="bpl" type="text" pattern="\d+">
+    </div>
+    <div title="positive integer (default 100)">
+        <label for="cpl">Characters per line:</label><input id="cpl" type="text" pattern="\d+">
+    </div>
+    <div title="0 (default),1,2,3,4,5,6">
+        <label for="crf">Credit text filter (level 0-6):</label><input id="crf" type="text" pattern="[0123456]">
+    </div>
+    <div title="0 (default),1,2,3,4">
+        <label for="nvlt">No volta on higher voice numbers:</label><input id="nvlt" type="text" pattern="[01234]">
+    </div>
+    <div title="0 (automatic),1,2,4,8,16 or 32">
+        <label for="den">Denominator unit length (L:): </label><input id="den" type="text" pattern="\d\d?">
+    </div>
+    <div title="0 (no midi), 1 (only program), 2 (all midi)">
+        <label for="midi">%%midi options:</label><input id="midi" type="text" pattern="[012]">
+    </div>
+    <div title="1..n number every n-th measure, 0 number every system">
+        <label for="mnum">Measure numbers:</label><input id="mnum" type="text" pattern="\d+">
+    </div>
+    <div title="don't translate xml system breaks to ABC score line breaks ($)">
+        <label for="nlb">No score line breaks:</label><input id="nlb" type="checkbox">
+    </div>
+    <div title="don't translate xml pedal directions to ABC">
+        <label for="noped">No pedal directions:</label><input id="noped" type="checkbox">
+    </div>
+    <div title="all xml direction elements go to the first ABC voice">
+        <label for="v1">All direcions to first voice</label><input id="v1" type="checkbox">
+    </div>
+    <div>
+        <label for="stems">Translate stem directions:</label><input id="stems" type="checkbox">
+    </div>
+    <div title="generate %%map and %%voicemap in ABC code">
+        <label for="tclef">perc, tab staff → %%voicemap:</label><input id="tclef" type="checkbox">
+    </div>
+    <div title="shift note heads 3 units left">
+        <label for="sst">Shift note heads in tablature:</label><input id="sst" type="checkbox">
+    </div>
+    <div title="rebeam on the beat of the time signature">
+        <label for="rbm">Rebeam:</label><input id="rbm" type="checkbox">
+    </div>
+    <div title="only works for simple repeats">
+        <label for="unfld">Unfold repeats:</label><input id="unfld" type="checkbox">
+    </div>
+    <div title="Force 53 means that edo36 accidentals will be mapped to edo53, even if it is a pure edo36 file.
+Fractional edo36 will write ABC like _1/3B and ^2/3F in stead of_1B and ^2F.">
+        <label for="temp">Temperament selection:</label>
+        <select id="temp">
+            <option value="0">Auto</option>
+            <option value="1">Force edo53</option>
+            <option value="2">Fractional edo36</option>
+        </select>
+    </div>
+    <div title="determines which accidental rules are applied">
+        <label for="fin">Accidental rule selection</label>
+        <select id="fin">
+            <option value="-1">Auto</option>
+            <option value="0">Strict</option>
+            <option value="1">Burak Uyar</option>
+            <option value="2">MuseScore</option>
+            <option value="3">Finale</option>
+        </select>
+    </div>
+    <div>Page format:
+        <span>
+            Copy from xml<input type="radio" name="fmtrad" checked="true" value="0">
+            No format<input type="radio" name="fmtrad" value="1">
+            Specify<input type="radio" name="fmtrad" value="2">
+        </span>
+    </div>
+    <div id="fmtdiv">
+        <div title="positive float (around 1.0)">
+            <label for="scale">scale:</label><input id="scale" type="number" min="0.01" step="any"></div>
+        <div title="positive float (cm)">
+            <label for="pwd">page width:</label><input id="pwd" type="number" min="0" step="any"></div>
+        <div title="positive float (cm)">
+            <label for="lftmrg">left margin:</label><input id="lftmrg" type="number" min="0" step="any"></div>
+        <div title="positive float (cm)">
+            <label for="rgtmrg">right margin:</label><input id="rgtmrg" type="number" min="0" step="any"></div>
+    </div>
+    <button type="button">Apply</button>
+</form>
+<div id="hlptxt"><p style="float:right; font-size:small">xml2abc, revision: 122<br>©Willem Vree</p>
+    <ul>Explanation of the options:
+    <li>Unfold repeats: if checked (only works for simple repeats, not for nested repeats)</li>
+    <li>Bars per line: the number of bars on a line (positive integer, default 0 == no limit)</li>
+    <li>Characters per line: the maximum number of characters on a line. (positive integer, 
+        default 100)</li>
+    <li>Credit filter level (0..6).
+        Credits, if not fitered, are shown as T: lines in the ABC translation.
+        <ul>
+        <li>0 (default): only show credits when no title is present in the xml-file</li>
+        <li>1: show all credits</li>
+        <li>2..6: skip if the credit already appears
+        in title, composer or lyricist (a higher number skips less)</li>
+        </ul>
+    </li>
+    <li>No volta on higher voice numbers: 0 (default),1,2,3,4
+        <ul>
+        <li>0: add volta number(s) or text to all voices in all parts</li>
+        <li>1: only volta in the first voice</li>
+        <li>2: only volta on first voice of each part</li>
+        <li>3: only add volta only to lowest voice in part 0</li>
+        <li>4: only add volta to lowest voice in each part</li>
+        </ul>
+    </li>
+    <li>Denominator unit length (L:):
+        <ul>
+        <li>0: L-value is chosen that results in the shortest ABC text (per voice)</li>
+        <li>1,2,4,8,16 or 32</li>
+        </ul>
+    </li>
+    <li>%%midi options: 0 (no midi), 1 (only program), 2 (all midi)</li>
+    <li>No score line breaks: if checked</li>
+    <li>No pedal directions: if checked</li>
+    <li>All direcions to first voice: if checked, otherwise directions go into the voice where
+        they are encountered.</li>
+    <li>Translate stem directions: if checked, otherwise ignore</li>
+    <li>perc, tab staff → %%voicemap: if checked generate %%map and %%voicemap in ABC code</li>
+    <li>Shift note heads in tablature: checkbox: shift note heads 3 units left</li>
+    <li>Measure numbers:
+        <ul>
+        <li>blank: no numbers</li>
+        <li>0: number every system</li>
+        <li>1..n: number every n-th measure</li>
+        </ul>
+    </li>
+    <li>Page format, radio buttons: Copy from xml, No format, Specify:
+        <ul>
+        <li>scale: positive float (around 1.0)</li>
+        <li>page width: cm, positive float</li>
+        <li>left margin: cm, positive float</li>
+        <li>right margin: cm, positive float</li>
+        </ul>
+    </li>
+    <li>Rebeam: make new beams on the beat of the time signature</li>
+    <li>Accidental rule selection: selects the rule set for the translation of microtonal accidentals.
+        <ul>
+        <li>Strict: respects floating point alter values when no accidental element present</li>
+        <li>Burak Uyar: when both alter and accidental are missing a natural is implied when
+        the pitch is altered by the key.</li>
+        <li>MuseScore: only respects integer alter values.
+        Ignores accidental rules for microtonal accidentals</li>
+        <li>Finale: ignores alter values.
+        ignores accidental rules for microtonal accidentals</li>
+        </ul>
+    </li>
+    <li>Temperament selection: selects the temperament for microtonal accidentals.
+        <ul>
+        <li>Force 53 means that edo36 accidentals will be mapped to edo53,
+        even if it is a pure edo36 file.</li>
+        <li>Fractional edo36 will translate up/down accidentals as _1/3B and ^2/3F in stead of_1B and ^2F.
+        The latter integer values are used for makam accidentals (edo53).
+        </li>
+        </ul>
+    </li>
+    </ul>
+    <a href="xml2abc-js-help.html">Javascript Interface Info</a>
+    <button>Cancel</button>
+</div>
+<div id="clpsav">ABC text is copied to the clipboard</div>
+<div class="rat" id="res" title="you can also drag/drop MusicXML files here" style="height: 91%;">
+    <div id="rollijn" class="dashed" style="height: 91%;"></div>
+    <textarea class="rat" id="abc" tabindex="1" autocorrect="off" spellcheck="false"></textarea><!-- no space here because it is rendered!
+    --><div class="rat" id="notation" style="scroll-behavior: smooth;"></div>
+</div>
+<pre class="rat" id="err"></pre>
+<div id="saveDiv" style="display:none;"></div>
+
+<div id="comp" class="dlog"></div><div class="read-frog-react-shadow-host" data-read-frog-host-toast=""></div><div id="hc_extension_bkgnd" style="position: fixed; inset: 0px; z-index: -1999999999; pointer-events: none; display: block; background: none 0% 0% / auto repeat scroll padding-box border-box rgb(255, 255, 255);"></div><span id="hc_extension_svg_filters" hidden=""><svg xmlns="http://www.w3.org/2000/svg" version="1.1"><defs><filter x="0" y="0" width="99999" height="99999" id="hc_extension_off"><feComponentTransfer><feFuncR type="table" tableValues="0 1"></feFuncR><feFuncG type="table" tableValues="0 1"></feFuncG><feFuncB type="table" tableValues="0 1"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_highcontrast"><feComponentTransfer><feFuncR type="gamma" exponent="3.0"></feFuncR><feFuncG type="gamma" exponent="3.0"></feFuncG><feFuncB type="gamma" exponent="3.0"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_highcontrast_back"><feComponentTransfer><feFuncR type="gamma" exponent="0.33"></feFuncR><feFuncG type="gamma" exponent="0.33"></feFuncG><feFuncB type="gamma" exponent="0.33"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_grayscale"><feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"></feColorMatrix><feComponentTransfer><feFuncR type="gamma" exponent="3"></feFuncR><feFuncG type="gamma" exponent="3"></feFuncG><feFuncB type="gamma" exponent="3"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_grayscale_back"><feComponentTransfer><feFuncR type="gamma" exponent="0.33"></feFuncR><feFuncG type="gamma" exponent="0.33"></feFuncG><feFuncB type="gamma" exponent="0.33"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_invert"><feComponentTransfer><feFuncR type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncR><feFuncG type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncG><feFuncB type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_invert_back"><feComponentTransfer><feFuncR type="table" tableValues="1 0"></feFuncR><feFuncG type="table" tableValues="1 0"></feFuncG><feFuncB type="table" tableValues="1 0"></feFuncB></feComponentTransfer><feComponentTransfer><feFuncR type="gamma" exponent="1.7"></feFuncR><feFuncG type="gamma" exponent="1.7"></feFuncG><feFuncB type="gamma" exponent="1.7"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_invert_grayscale"><feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"></feColorMatrix><feComponentTransfer><feFuncR type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncR><feFuncG type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncG><feFuncB type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncB></feComponentTransfer></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_yellow_on_black"><feComponentTransfer><feFuncR type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncR><feFuncG type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncG><feFuncB type="gamma" amplitude="-1" exponent="3" offset="1"></feFuncB></feComponentTransfer><feColorMatrix type="matrix" values="0.3 0.5 0.2 0 0 0.3 0.5 0.2 0 0 0 0 0 0 0 0 0 0 1 0"></feColorMatrix></filter><filter x="0" y="0" width="99999" height="99999" id="hc_extension_yellow_on_black_back"><feComponentTransfer><feFuncR type="table" tableValues="1 0"></feFuncR><feFuncG type="table" tableValues="1 0"></feFuncG><feFuncB type="table" tableValues="1 0"></feFuncB></feComponentTransfer><feComponentTransfer><feFuncR type="gamma" exponent="0.33"></feFuncR><feFuncG type="gamma" exponent="0.33"></feFuncG><feFuncB type="gamma" exponent="0.33"></feFuncB></feComponentTransfer></filter></defs></svg></span><read-frog-selection class="notranslate" style="overflow: visible; position: relative; width: 0px; height: 0px; display: block;"></read-frog-selection><read-frog class="notranslate" style="overflow: visible; position: relative; width: 0px; height: 0px; display: block;"></read-frog></body></html>

@@ -1,0 +1,180 @@
+<!DOCTYPE HTML><html><head><meta charset="utf-8"></head>
+<body><pre>2026-06-21
+
+	* Revision: 122
+	- translate chord symbols starting within a concurrent note as an ABC
+	overlay.
+	- new function appendChordsym(), new fields in class Elem for chord symbols.
+	- sortMeasure() determines the metrical position of chord symbols and returns
+	an extra array of chord symbols that occur within a concurrent note.
+	outVoice() uses this array to construct an ABC overlay.
+	- new global storage gChSyms (parallel to gMaten) is needed to make the array
+	of concurrent chord symbols available to outVoices()
+	- the &lt;offset&gt; subelement of harmony elements is translated. All chords with
+	an offset element are placed in an ABC overlay
+
+2025-11-26
+
+	* Revision: 121
+	- loop over all &lt;staff-details&gt; if more than one such element are present
+	- do not output transpose= for a TAB voice in ABC, because the notes are
+	already transposed.
+	- try to repair empty measures by inserting a rest with duration of a full
+	measure. A full measure rest Z does not work with M:none
+
+2025-11-18
+
+	* Revision: 120
+	- create separate repositories for the web app (xml2abc_js.html) and the
+	javascript version of xml2abc (xml2abc.js)
+	- update compile script
+
+2025-11-17
+
+	* Revision: 119
+	- only include xml2abc.js in the zip-distribution The web app needs a
+	separate distribution (xml2abc-js.html, xmlplay_los.js) in xmlplay_los:
+	- set opt.sf2url1 and opt.sf2url2 in to fixed locations These locations are
+	only valid for the web app that xmlplay_los.js was made for
+	- remove the parameter sf2url_p start_markeer
+
+2025-11-14
+
+	* Revision: 118
+	- do not display acciaccatura in tablature
+
+2025-10-29
+
+	* Revision: 117
+	- ABCoutput.clefs is a Map object to keep the same voice order as the python
+	version
+	- staff_keys sorted properly (number order i/o string order)
+
+2025-10-28
+
+	* Revision: 116
+	- also translate slurs when they start or end in a grace sequence
+
+	* Revision: 115
+	- translate note types of grace notes
+	- for grace notes map types to abc durations respecting the fixed unit length
+	that is used by acb2svg: L=1/8 for single grace notes, L=1/16 for multiple
+	grace notes
+
+2025-10-23
+
+	* Revision: 114
+	- add function append to Dollar class (dollar.js and dollarDom.js)
+	- same changes as in xml2abc.py revision 170, now translated to javascript
+	- more finegrained code to handle the creation of DOM elements needed for
+	empty staves, compared to what was needed with ElementTree in Python.
+
+2025-10-12
+
+	* Revision: 113
+	xml2abc.js:
+	- added translation of sound/instrument-change/score-instrument as used by
+	musescore dollarDom.js:
+	- set ownerDocument for new elements if possible.
+	- use setAttribute in stead of assigning to the attributes property
+	- added three new test files
+
+2025-06-16
+
+	* Revision: 112
+	- updated compile script
+	- added dollarDom.js (jquery replacement)
+
+2025-04-20
+
+	* Revision: 111
+	- better rebeam (for 5/8 and 7/8)
+	- new option: --nbr, do not use broken rhythms in ABC code generation
+	- bug rebeam: for a beam both current and previous note need to have a
+	duration &lt; 1/4
+	- update regression comparison with general option capability
+
+2025-04-15
+
+	* Revision: 110
+	- bug: place initial key in the header if transposition/chromatic is a
+	multiple of 12. Otherwise, if chromatic transposition is different from a
+	multiple of 12, place the key in the current voice only and not in the
+	header.
+
+2025-04-13
+
+	* Revision: 109
+	- bug: also scan key-accidentals to determine the tuning
+	- include abc2xml in the search for software identification
+
+2025-04-10
+
+	* Revision: 108
+	- new option "rbm" to re-beam all measures
+	- clean up: use a new measure data object for each measure and keep a
+	reference in array maatRecs
+
+2025-04-06
+
+	* Revision: 107
+	- For the burak encoder the absence of an accidemtal element seems to signal
+	a natural accidental when the particular pitch is altered in the key.
+	(except for grace notes that always seem to follow the key). This change is
+	provisional.
+
+2025-03-14
+
+	* Revision: 106
+	xml2abc-js.html:
+	- squashed some bugs
+	- new command line option --fin to set the microtonal accidental rules
+	(0,1,2,3)
+	- select element in the option window to select the microtonal accidental
+	rules
+	- idem for temperament rules
+	- remove default part name (MusicXML Part) from ABC code xml2abc.js:
+	- added auto value (-1) to --fin and remover --nofin
+	- renamed edomix to edomap and reused edomix for fractional edo36 values
+	- new option --temp (0=auto choice edo: 12, 36 or 53, 1=force edo53 and map
+	edo36, 2=use fractional edo36 values when mixing edo 53 and 36
+	- only autodetect encoder when microtonal accidentals present
+	--fin=3 always show accidentals and ignore pitch-alter (finale)
+	--fin=2 use musescore rules for accidentals (musescore)
+	--fin=1 same as 2 but always use current alteration when no pitch-alter
+	(burak)
+	--fin=0 same as 2 but also honor microtonal pitch-alter values
+	--fin=-1 automatic detection of encoder if finale or burak, otherwise
+	musescore
+
+2025-03-09
+
+	* Revision: 105
+	xml2abc.js:
+	- option --fin, when set pitch-alterations are ignored for microtonal
+	accidentals This seems to be the logic presently followed by finale and
+	musescore
+	- auto-detect musescore/finale and set --fin if detected
+	- option --nofin disables auto-detection xml2abc-js.html:
+	-changed height of the flat-up glyph
+	-added options no36, fin and nofin
+	-added some more title tooltips
+
+2025-03-06
+
+	* Revision: 104
+	- when a tune uses %%MIDI temperamentequal 36, replace ^3 by ^ and _3 by _
+	(because 3*12/36 == 1)
+
+2025-02-17
+
+	* Revision: 103
+	- add make-shift accidental symbols for edo36 (up/down variants)
+	- accept floating alter if +/-1.0, 0.0 or +/-0.5
+	- do not add natural (converted from alter) if no current alteration (or key
+	alteration)
+	-- changes in test functions:
+	- add option handling to xml2abc_cli_dollar.js
+	- single bar output in xml2abc_regres_dollar.js and dopy3.bash
+
+</pre></body></html>

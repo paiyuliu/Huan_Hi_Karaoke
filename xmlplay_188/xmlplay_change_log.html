@@ -1,0 +1,159 @@
+<!DOCTYPE HTML><html><head><meta charset="utf-8"></head>
+<body><pre>2026-07-03
+
+	* Revision: 188
+	- added (again) mkNtsSeq to the exportlist, because it is used in
+	xmlplay_los.js
+
+2026-06-30
+
+	* Revision: 187
+	- new option opt.tomsr (URL &amp;tomsr=..) jumps to the given measure number
+	after the score is loaded.
+	- new parameter in function mkNtsSeq on which measure number to place the
+	cursor.
+	- store the last note time of each measure bar in barTimes.
+	- remove unused reference to mkNtsSeq from the export list
+
+2026-06-29
+
+	* Revision: 186
+	- changed default dynamic midi value to 80 (mf)
+	- changed midi values of all dynamic annotations (ppp ... fff) compatible to
+	MuseScore
+
+	* Revision: 185
+	- new option opt.dynvce (URL &amp;dynvce). When present in the URL (or
+	opt.dynvce == 1) a dynamic annotation only applies to the ABC voice in which
+	it occurs. Without this option (the default) a dynamic annotation applies to
+	all voices of the staff in which it occurs.
+	- staccato and marcato are implemented.
+	- add options rbm, burak and dynvce also to xmlplay_emb.js. Also add the
+	missing default setting for opt.arpmaxdur
+
+2026-05-17
+
+	* Revision: 184
+	- correct irregular playback: schedule notes with the precise real time in
+	stead of relying on the timing of function setTimout() The cursor is still
+	scheduled with setTimeout
+
+2026-05-07
+
+	* Revision: 183
+	- updated handling of the d: URL parameters used to access dropbox. You have
+	to provide an extra parameter to spefify the key required by dropbox (see
+	readme)
+	- use "await fetch()" in function readDbxFile() in stead of XMLHttpRequest
+	- updated the readme and xmlplay_index to explain the changed d: parameter
+
+2026-05-03
+
+	* Revision: 182
+	- bug in code for arpeggio caused wrong duration of the arpeggio
+	- shorter max time for arpeggio
+	- new URL opion arp=nn (equivalent preload option: arpmaxdur:nn) sets the
+	maximum duration of an arpeggio to nn ABC ticks (384 in a quarter note).
+	Default value is 36 ticks (75 msec with tempo 75 bpm).
+
+2025-11-22
+
+	* Revision: 181
+	- remove function Getscript and use a version of abc2svg that includes the
+	strtab module
+
+2025-11-12
+
+	* Revision: 180
+	- bug in regex that extracts the ABC code from the html-text
+	- use "new RegExp" in stead of regexp-literal so that it can be compiled by
+	the closure compiler
+
+2025-11-11
+
+	* Revision: 179
+	- load strtab-1.js dynamically
+	- do not clear error messages
+	- merge changes in xmlplay.js into xmlplay_emb.js
+
+	* Revision: 178
+	- make code compatible with %%strtab and %%percmap of abc2svg
+	- disable module strtab when ABC tablature is made with %%voicemap (-t option
+	of xml2abc)
+	- remove function stringTunings
+	- skip translation of %%percmap with %%map and %%voicemap when when syntax of
+	abc2svg is used
+	- use .midi property when map name is MIDIdrum
+
+2025-06-26
+
+	* Revision: 177
+	- re-fetch the html source file as raw text to extract ABC fragments with a
+	regular expression. This avoids problems with characters that are modified
+	in the DOM by the html parser, such as '&lt;', '&amp;'. Because the html file is
+	cached, re-fetching only causes negligible overhead.
+	- function logerr (s) adds the text s to the dialog#comp (which can be viewed
+	by pressing key 't' while the score has the focus, i.e. during playback)
+	- bug in xmlplay_lib: undefined variable (isvgAligned) when moving the dotted
+	line too fast. compile script:
+	- add the piano embedded example to the distribution
+	- specify --language_out for the closure compiler to make it compile the
+	regular expression for abc fragments
+
+2025-06-16
+
+	* Revision: 176
+	- remove use of jquery from xmlplay.js
+	- barTimes should be reset in mkNtsSeq, not outside
+
+2025-06-13
+
+	* Revision: 175
+	xmlplay_lib.js:
+	- don't honor default touch actions when shifting the dotted line (touch-
+	action: none)
+	- don't propagate pointerup event for the dotted line otherwise the music
+	stops xmlplay_emb.js:
+	- set the focus to the first embedded music fragment, so that the key
+	shortcuts work right away (space bar, arrow keys). Also set outline:none in
+	the .abc style to suppress the ugly highlighting of the focussed element.
+	- the document body listens to the pointerup event instead of the click event
+	(compatible with the code for shifting the dotted line)
+	- added a new example and changed the example text
+
+2025-06-10
+
+	* Revision: 174
+	-bug: first test for the presence of the midijs checkbox before setting it!
+	-add the sf2-soundfont for instrument 0 to the distribution zip file
+
+2025-06-08
+
+	* Revision: 173
+	- added playback for arpeggio
+
+2025-06-05
+
+	* Revision: 172
+	- bugs in playback of grace notes with multiple voices
+	- start at begin of a music fragment when changing fragments in xmlplay_emb
+	- add possibility to use xmlplay_lib with an external putMarkLoc function
+	(high lighting the cursor)
+
+2025-05-14
+
+	* Revision: 171
+	- implemented the noDash option
+	- implemented manual moving of the dotted line
+
+	* Revision: 170
+	- shorter implementation of music scrolling (alignment with the dotted line)
+	- add listener for scrollend event only to the document
+
+2025-05-13
+
+	* Revision: 169
+	- add dialog-div dynamically
+	- scroll abc element into view when activated
+
+</pre></body></html>

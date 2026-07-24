@@ -1,0 +1,71 @@
+<!DOCTYPE HTML>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<script src="abc2svg-1.js"></script>
+<script src="xmlplay_emb.js" type="module"></script>
+<style>
+.abc { max-width: 800px; background: #f8f8f8; display: block; cursor: pointer; 
+       width: 70%; height: 70vh; overflow: auto; outline: none; }
+</style>
+</head><body>
+<div id="parms">
+    { "noDash": 1, "sf2url1": "./" }
+</div>
+<p>This is a simple HTML document with embedded ABC music code. The music is rendered as
+SVG pictures. The score area has a grey background for this demonstration.</p>
+<p>Play back is started by clicking inside the score. Clicking outside the score
+area stops playback.</p>
+<p>With a keyboard the space bar starts/stops the music and the arrow keys
+can be used to move the cursor.</p>
+<div style="display:flex">
+<div style="width: 30%">
+<p>The ABC example is inside a flex-div to show that
+positioning the cursor in the music works accurately, independent of
+horizontal and vertical offset of the score area.
+</p><p>
+The example also shows that the music can scoll to keep the cursor in view. This happens
+when the music is higher than the score area. In this demonstration the height of
+the score area is intentionally kept to 70% of the view height, so that scrolling may occur.
+</p><p>
+The example only uses the piano soundfont that is included in the distribution zip-file
+</p><p>
+Playback does real-time synthesis in the browser using <em>.sf2</em>
+<a href="https://en.wikipedia.org/wiki/SoundFont">sound fonts</a>.
+</p>
+</div>
+<div class="abc">
+%%scale 0.83
+%%leftmargin 0
+%%rightmargin 0
+%%pagewidth 15cm
+X:1
+T:Maple Leaf Rag
+T:Scott Joplin
+%%score { 1 | 2 }
+L:1/8
+Q:1/4=100
+M:2/4
+I:linebreak $
+K:Ab
+V:1 treble
+L:1/16
+!f! z2 |: z"^Tempo Di Marcia" A[Ee]A c[Ee]2G | [Ee]GB[Ee]- [Ee]4 | %3
+ z A[Ee]A c[Ee]2G | [Ee]GB[Ee]- [Ee]2 z [Ee] |$ z A_c[_F_f] z [Ee] z [Ee] | z A_c[_F_f] z [Ee] z2 | %7
+ z8 |$ z (A_c)a z (a_c')a' |!f! [aa']2[aa']2 [aa']2[aa'][aa']- | [aa']e'f'c' e'[af']2[_fa]- | %11
+ [fa]b[_f_c']a b[e=c']2a |$ [ec']a[eb]2 [ea]2 z [Aa]- | [Aa]2[Aa]2 [Aa]2[Aa][Aa]- | %14
+ [Aa]e[Af]c e[Af]2[_FA]- | [FA]B[_F_c]A B[E=c]2A |1$ [Ec]A[EB]2 [EA]2 z2 :|
+V:2 bass
+ [E,,E,] |: [A,,A,][E,A,C] [E,A,C][=A,,=A,] | [B,,B,][E,G,D] [E,G,D][E,,E,] | %3
+ [A,,A,][E,A,C] [E,A,C][=A,,=A,] | [B,,B,][E,G,D] [E,G,D][E,,E,] |$ [_F,,_F,]2 [E,,E,][E,,E,] | %6
+ [_F,,_F,]2 [E,,E,] z |!mf! z/ (A,,/_C,/)A,/ z/ (A,/_C/)A/ |$ A, z A z | %9
+[K:treble] [=DFA=B][DFAB] [DFAB][DFAB] | [EAc][EAc] [EAc][EAc] | [_FA_c][FAc] [EA=c][EAc] |$ %12
+ [EAc][EGd] [Ac] z |[K:bass] [=D,F,A,=B,][D,F,A,B,] [D,F,A,B,][D,F,A,B,] | %14
+ [E,A,C][E,A,C] [E,A,C][E,A,C] | [_F,A,_C][F,A,C] [E,A,=C][E,A,C] |1$ %16
+ [E,G,C][E,G,D] [A,C][E,,E,] :|
+</div>
+</div>
+</ul>
+<p style="text-align: center">End of Demo</p>
+<p><a href="./xmlplay_emb.html">Another larger example</a>.</p>
+</body></html>

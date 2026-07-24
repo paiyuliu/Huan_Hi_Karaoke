@@ -1,0 +1,3 @@
+[submodule "SelfPlayingMusic"]
+	path = SelfPlayingMusic
+	url = https://github.com/paiyuliu/SelfPlayingMusic
